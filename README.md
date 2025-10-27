@@ -24,11 +24,9 @@ NittyGriddy is a Windows application that provides a visual grid-based system fo
   - `Ctrl+Shift+S`: Snap active window to nearest cell
  
 ## UI
-[Grid overlay](https://imgur.com/GsItVUK)
-
-[UI - Grid Configuration](https://imgur.com/swKnSsJ)
-
-[UI - Window Filter](https://imgur.com/LSxWKd3)
+![Grid overlay](https://i.imgur.com/GsItVUK.png)
+![UI - Grid Configuration](https://i.imgur.com/swKnSsJ.png)
+![UI - Window Filter](https://i.imgur.com/LSxWKd3.png)
 
 ## Quick Start
 
