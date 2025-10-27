@@ -105,10 +105,6 @@ By default, the app targets windows with class name `ApolloRuntimeContentWindow`
 - Number of Windows: 9
 - Result: Automatically creates 3×3 grid
 
-## Architecture
-
-See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
-
 ## Requirements
 
 - Windows OS
@@ -117,4 +113,4 @@ See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
 
 ## License
 
-MIT
+GNU General Public License v3.0
