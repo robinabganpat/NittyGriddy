@@ -22,6 +22,13 @@ NittyGriddy is a Windows application that provides a visual grid-based system fo
 - **Keyboard Shortcuts**:
   - `Ctrl+Shift+G`: Toggle grid overlay on/off
   - `Ctrl+Shift+S`: Snap active window to nearest cell
+ 
+## UI
+[Grid overlay](https://imgur.com/GsItVUK)
+
+[UI - Grid Configuration](https://imgur.com/swKnSsJ)
+
+[UI - Window Filter](https://imgur.com/LSxWKd3)
 
 ## Quick Start
 
@@ -51,6 +58,30 @@ NittyGriddy is a Windows application that provides a visual grid-based system fo
 ## Default Configuration
 
 By default, the app targets windows with class name `ApolloRuntimeContentWindow` (common poker clients). You can add additional window classes or title patterns in the "Window Filters" tab.
+
+**Example window filter configuration**
+```
+"WindowFilters": [
+    // GGPoker - MTT's
+    {
+      "ClassName": "ApolloRuntimeContentWindow",
+      "TitlePattern": "- Table",
+      "UseRegex": true
+    },
+    // HC Online - MTT's
+    {
+      "ClassName": "Qt51518QWindowOwnDCIcon",
+      "TitlePattern": "\\| Ante",
+      "UseRegex": true
+    },
+    // GGPoker - Cash games
+    {
+      "ClassName": "ApolloRuntimeContentWindow",
+      "TitlePattern": "\\$[\\d.]+ / \\$[\\d.]+",
+      "UseRegex": true
+    }
+  ]
+```
 
 ### Adding Window Filters
 
