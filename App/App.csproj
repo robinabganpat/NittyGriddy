@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net9.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+
+        <!-- Application Info -->
+        <AssemblyName>NittyGriddy</AssemblyName>
+        <Product>NittyGriddy</Product>
+        <Title>NittyGriddy - Window Grid Manager</Title>
+        <Description>Automatic window grid manager with multi-monitor support and smart snapping</Description>
+        <Version>1.0.0</Version>
+        <Company>NittyGriddy</Company>
+        <Copyright>Copyright © 2025</Copyright>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
+
+</Project>

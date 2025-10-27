@@ -1,0 +1,448 @@
+﻿<Window x:Class="App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="NittyGriddy - Window Grid Manager" Height="700" Width="1000" MinHeight="600" MinWidth="900"
+        Background="#F3F3F3"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
+    <Window.Resources>
+        <!-- Windows 11 Color Palette -->
+        <SolidColorBrush x:Key="AccentBlue">#0078D4</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBlueHover">#106EBE</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentBluePressed">#005A9E</SolidColorBrush>
+        <SolidColorBrush x:Key="CardBackground">#FFFFFF</SolidColorBrush>
+        <SolidColorBrush x:Key="SubtleBackground">#F9F9F9</SolidColorBrush>
+        <SolidColorBrush x:Key="BorderColor">#E1E1E1</SolidColorBrush>
+        <SolidColorBrush x:Key="TextPrimary">#1F1F1F</SolidColorBrush>
+        <SolidColorBrush x:Key="TextSecondary">#5E5E5E</SolidColorBrush>
+        <SolidColorBrush x:Key="TextTertiary">#8C8C8C</SolidColorBrush>
+
+        <!-- Windows 11 Drop Shadow Effect -->
+        <DropShadowEffect x:Key="CardShadow"
+                          BlurRadius="6"
+                          ShadowDepth="1"
+                          Opacity="0.08"
+                          Color="#000000"
+                          RenderingBias="Performance"/>
+
+        <!-- Modern Button Style -->
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentBlue}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True"
+                                UseLayoutRounding="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            TextOptions.TextFormattingMode="Display"
+                                            TextOptions.TextRenderingMode="ClearType"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentBlueHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="{StaticResource AccentBluePressed}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Card Style GroupBox -->
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="{StaticResource CardBackground}"
+                                CornerRadius="8"
+                                Effect="{StaticResource CardShadow}"
+                                SnapsToDevicePixels="True"
+                                UseLayoutRounding="True">
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="{TemplateBinding Header}"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimary}"
+                                           Margin="0,0,0,12"
+                                           TextOptions.TextFormattingMode="Display"
+                                           TextOptions.TextRenderingMode="ClearType"/>
+                                <ContentPresenter Grid.Row="1"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern TextBox Style -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource CardBackground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True"
+                                UseLayoutRounding="True">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                        Focusable="False"
+                                        Padding="{TemplateBinding Padding}"
+                                        VerticalScrollBarVisibility="Disabled"
+                                        HorizontalScrollBarVisibility="Disabled"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern ListBox Style -->
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="{StaticResource SubtleBackground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True"
+                                UseLayoutRounding="True">
+                            <ScrollViewer Padding="{TemplateBinding Padding}"
+                                        TextOptions.TextFormattingMode="Display"
+                                        TextOptions.TextRenderingMode="ClearType">
+                                <ItemsPresenter SnapsToDevicePixels="True"/>
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TabControl Style -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- TabItem Style -->
+        <Style TargetType="TabItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,2"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="0,0,4,0">
+                            <ContentPresenter ContentSource="Header"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBlue}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource SubtleBackground}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Expander Style -->
+        <Style TargetType="Expander">
+            <Setter Property="Background" Value="{StaticResource SubtleBackground}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Expander">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Border x:Name="HeaderBorder"
+                                        Grid.Row="0"
+                                        Padding="{TemplateBinding Padding}"
+                                        Background="Transparent">
+                                    <ContentPresenter ContentSource="Header"/>
+                                </Border>
+                                <Border x:Name="ContentBorder"
+                                        Grid.Row="1"
+                                        Padding="{TemplateBinding Padding}"
+                                        Visibility="Collapsed">
+                                    <ContentPresenter/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="True">
+                                <Setter TargetName="ContentBorder" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{StaticResource CardBackground}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- CheckBox Style -->
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+        </Style>
+
+        <!-- TextBlock Style -->
+        <Style TargetType="TextBlock">
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+        </Style>
+
+        <!-- Label Style -->
+        <Style TargetType="Label">
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Control Panel -->
+        <GroupBox Grid.Row="1" Header="Grid Control" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <Button x:Name="BtnToggleGrid" Content="Enable Grid" Height="36" Margin="0,0,10,0" Click="BtnToggleGrid_Click" Style="{StaticResource ModernButton}"/>
+                    <Button x:Name="BtnPreviewGrid" Content="Preview Grid" Height="36" Margin="0,0,10,0" Click="BtnPreviewGrid_Click" Style="{StaticResource ModernButton}"/>
+                    <TextBlock x:Name="TxtGridStatus" Text="Grid Disabled" VerticalAlignment="Center" FontWeight="Normal" FontSize="14" Foreground="{StaticResource TextSecondary}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <Button x:Name="BtnAutoArrange" Content="Auto-Arrange Windows" Height="36" Margin="0,0,10,0" Click="BtnAutoArrange_Click" Style="{StaticResource ModernButton}"/>
+                    <TextBlock x:Name="TxtWindowCount" Text="Target Windows: 0" VerticalAlignment="Center" FontSize="14" Foreground="{StaticResource AccentBlue}"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <CheckBox x:Name="ChkMaintainAspectRatio" Content="Maintain window aspect ratio when snapping"
+                              VerticalAlignment="Center"
+                              IsChecked="True"
+                              Checked="ChkMaintainAspectRatio_Changed"
+                              Unchecked="ChkMaintainAspectRatio_Changed"/>
+                    <TextBlock Text="(Prevents distortion of poker tables)"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0"
+                               Foreground="{StaticResource TextTertiary}"
+                               FontSize="12"/>
+                </StackPanel>
+                <TextBlock Text="Press Ctrl+Shift+G to toggle grid | Press Ctrl+Shift+S to snap active window" Foreground="{StaticResource TextTertiary}" FontSize="12"/>
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Configuration Panel -->
+        <TabControl Grid.Row="2">
+            <!-- Monitor Grid Configuration Tab -->
+            <TabItem Header="Grid Configuration">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Configure each monitor independently:" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <TextBlock Text="Grid configuration applies automatically" FontStyle="Italic" Foreground="Green" Margin="0,0,0,15"/>
+
+                        <!-- Dynamic Monitor Configurations -->
+                        <ItemsControl x:Name="MonitorConfigsContainer">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Expander Header="{Binding Header}" IsExpanded="True" Margin="0,0,0,10" BorderBrush="LightGray" BorderThickness="1">
+                                        <StackPanel Margin="10">
+                                            <!-- Layout Mode Selection -->
+                                            <TextBlock Text="Layout Mode" FontWeight="Bold" Margin="0,0,0,5"/>
+                                            <RadioButton Content="Fixed Grid (Rows x Columns)"
+                                                         IsChecked="{Binding IsFixedGridMode}"
+                                                         GroupName="{Binding RadioGroupName}"
+                                                         Margin="0,0,0,10"/>
+                                            <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                                                <TextBlock Text="Rows:" VerticalAlignment="Center" Width="60"/>
+                                                <TextBox Width="70" Height="32" Text="{Binding Rows, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,20,0" IsEnabled="{Binding IsFixedGridMode}" FontSize="13"/>
+                                                <TextBlock Text="Columns:" VerticalAlignment="Center" Width="60"/>
+                                                <TextBox Width="70" Height="32" Text="{Binding Columns, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsFixedGridMode}" FontSize="13"/>
+                                            </StackPanel>
+
+                                            <RadioButton Content="N-Window Optimized"
+                                                         IsChecked="{Binding IsNWindowMode}"
+                                                         GroupName="{Binding RadioGroupName}"
+                                                         Margin="0,0,0,10"/>
+                                            <StackPanel Orientation="Horizontal" Margin="20,0,0,10">
+                                                <TextBlock Text="Number of Windows:" VerticalAlignment="Center" Width="130"/>
+                                                <TextBox Width="70" Height="32" Text="{Binding NumWindows, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNWindowMode}" FontSize="13"/>
+                                            </StackPanel>
+
+                                            <RadioButton Content="Disabled (No Grid)"
+                                                         IsChecked="{Binding IsDisabledMode}"
+                                                         GroupName="{Binding RadioGroupName}"
+                                                         Margin="0,0,0,10"/>
+
+                                            <!-- Grid Settings -->
+                                            <TextBlock Text="Grid Settings" FontWeight="Bold" Margin="0,10,0,5"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                <TextBlock Text="Cell Spacing:" VerticalAlignment="Center" Width="100"/>
+                                                <Slider Width="200" Minimum="0" Maximum="50" Value="{Binding CellSpacing}" TickFrequency="5" IsSnapToTickEnabled="True"/>
+                                                <TextBlock Text="{Binding CellSpacing, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </StackPanel>
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                <TextBlock Text="Cell Margins:" VerticalAlignment="Center" Width="100"/>
+                                                <Slider Width="200" Minimum="0" Maximum="20" Value="{Binding CellMargins}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                                                <TextBlock Text="{Binding CellMargins, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Expander>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Window Filters Tab -->
+            <TabItem Header="Window Filters">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="Window Filters" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Define filters to match windows by Class Name AND/OR Title Pattern. Both conditions must match (AND logic)."
+                                   TextWrapping="Wrap" Margin="0,0,0,16" Foreground="{StaticResource TextSecondary}" FontSize="13"/>
+
+                        <!-- Current Filters List -->
+                        <GroupBox Header="Active Filters" Padding="10" MinHeight="200" Margin="0,0,0,10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <ListBox x:Name="LstWindowFilters" Grid.Row="0" Margin="0,0,0,10" Height="180"/>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                                    <Button Content="Edit Selected" Height="36" Margin="0,0,10,0" Click="BtnEditWindowFilter_Click" Style="{StaticResource ModernButton}"/>
+                                    <Button Content="Remove Selected" Height="36" Click="BtnRemoveWindowFilter_Click" Style="{StaticResource ModernButton}"/>
+                                    <TextBlock Text="Select a filter to edit or remove"
+                                               VerticalAlignment="Center" Margin="10,0,0,0" Foreground="{StaticResource TextTertiary}" FontSize="12"/>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- Add New Filter -->
+                        <GroupBox Header="Add New Filter" Padding="10">
+                            <StackPanel>
+                                <TextBlock Text="Class Name (e.g., 'ApolloRuntimeContentWindow'):" Margin="0,0,0,5"/>
+                                <TextBox x:Name="TxtNewWindowClass" Height="34" Margin="0,0,0,10"/>
+
+                                <TextBlock Text="Title Pattern (e.g., 'Poker', 'Table'):" Margin="0,0,0,5"/>
+                                <TextBox x:Name="TxtNewWindowTitle" Height="34" Margin="0,0,0,10"/>
+
+                                <CheckBox x:Name="ChkUseRegex" Content="Use Regular Expression (Regex) matching" Margin="0,0,0,10"/>
+
+                                <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource TextTertiary}" FontSize="12">
+                                    <Run Text="• Leave either field empty to match 'any'"/>
+                                    <LineBreak/>
+                                    <Run Text="• Both specified = must match both (AND logic)"/>
+                                    <LineBreak/>
+                                    <Run Text="• Regex examples: '^Table \d+$', '(Cash|Tournament)', 'NL\d+'"/>
+                                </TextBlock>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="BtnAddFilter" Content="Add Filter" Height="36" Click="BtnAddWindowFilter_Click" Margin="0,0,10,0" Style="{StaticResource ModernButton}"/>
+                                    <Button x:Name="BtnCancelEdit" Content="Cancel Edit" Height="36" Click="BtnCancelEdit_Click" Margin="0,0,10,0" Style="{StaticResource ModernButton}" Visibility="Collapsed"/>
+                                    <Button Content="Pick Window from List..." Height="36" Click="BtnPickWindow_Click" Style="{StaticResource ModernButton}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Bottom Actions -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnSaveConfig" Content="Save Configuration" Height="36" Margin="0,0,10,0" Click="BtnSaveConfig_Click" Style="{StaticResource ModernButton}"/>
+            <Button x:Name="BtnLoadConfig" Content="Load Configuration" Height="36" Click="BtnLoadConfig_Click" Style="{StaticResource ModernButton}"/>
+        </StackPanel>
+    </Grid>
+</Window>
