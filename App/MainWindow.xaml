@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="NittyGriddy - Window Grid Manager" Height="700" Width="1000" MinHeight="600" MinWidth="900"
+        Icon="icon.ico"
         Background="#F3F3F3"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
