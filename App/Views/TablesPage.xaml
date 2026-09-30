@@ -54,7 +54,7 @@
                                Text="No rules, so no window is managed. Add a client or a rule of your own."/>
 
                     <StackPanel Orientation="Horizontal">
-                        <Button x:Name="BtnAddClient" Content="Add client ▾" Margin="0,0,8,0" Click="BtnAddClient_Click">
+                        <Button x:Name="BtnAddClient" Content="Add built-in client ▾" Margin="0,0,8,0" Click="BtnAddClient_Click">
                             <Button.ContextMenu>
                                 <ContextMenu x:Name="ClientMenu"/>
                             </Button.ContextMenu>

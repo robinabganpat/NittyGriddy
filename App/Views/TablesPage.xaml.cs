@@ -131,7 +131,9 @@ namespace App.Views
                 item.Click += MenuAddClient_Click;
                 ClientMenu.Items.Add(item);
             }
-            BtnAddClient.IsEnabled = ClientMenu.Items.Count > 0;
+            // Only offered when a built-in client was removed from this profile; a disabled button would look like
+            // the way to add any client
+            BtnAddClient.Visibility = ClientMenu.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         /// <summary>
