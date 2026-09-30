@@ -4,7 +4,7 @@
 
 NittyGriddy arranges poker table windows into a grid of numbered slots across your monitors and lets you select and move tables with global hotkeys. It works for any kind of window (traders, dashboards), but it is built for multi-tabling.
 
-It works purely at the window level: it moves, resizes and activates windows through the Windows window API. It never sends clicks or keystrokes to a poker client, never reads table contents, and has no HUD or betting hotkeys.
+It works purely at the window level: it moves, resizes and activates windows through the Windows window API. It never sends clicks or keystrokes to a poker client, never reads table contents, and has no HUD or betting hotkeys. See [What NittyGriddy does to a poker client](#what-nittygriddy-does-to-a-poker-client) for exactly which Windows functions it uses.
 
 ![NittyGriddy's Layout tab: a 2 × 3 grid of numbered slots on each of three displays](docs/screenshots/layout.png)
 
@@ -127,6 +127,36 @@ Things to know:
 - Program names are read from the system's process list. No handle to a poker client's process is opened.
 - Built-in rules update with NittyGriddy. Once you edit one, it is yours and no longer updates.
 - Other sites on the GGPoker or iPoker networks should work where the program is named `GGnet` or `PokerClient`.
+
+## What NittyGriddy does to a poker client
+
+NittyGriddy changes the size, position, focus and stacking order of a client's windows: the same things you do by hand with the mouse. It never sends input to a poker client and never reads what is inside its windows. Every Windows function the program uses is listed below; you can check them in [`App/Native/NativeMethods.cs`](App/Native/NativeMethods.cs) and the two services that declare their own ([`WindowEnumerationService`](App/Services/WindowEnumerationService.cs), [`MonitorService`](App/Services/MonitorService.cs)).
+
+**What it does with a poker client's windows**
+
+| Purpose | Windows functions |
+|---|---|
+| Find windows and read their label: window class, title bar text, owning process id | `EnumWindows`, `GetClassName`, `GetWindowText`, `GetWindowThreadProcessId` |
+| Check a window's state | `IsWindow`, `IsWindowVisible`, `IsIconic`, `IsZoomed`, `GetWindowRect`, `GetAncestor`, `DwmGetWindowAttribute` (frame size, and whether Windows is hiding it) |
+| Move, resize and bring forward | `SetWindowPos` (always without activating), `ShowWindow` (restore or show without activating), `SetForegroundWindow` (slot hotkeys), a short topmost toggle for *Tables to front* |
+| Notice windows opening, closing, moving and getting focus | `SetWinEventHook`, out of context: Windows reports the event to NittyGriddy, and no code runs inside the client |
+
+For a window of another program, `GetWindowText` returns the title Windows keeps for it; the program itself is not asked.
+
+**What it never does**
+
+- Send input: no `SendInput`, `SendMessage`, `PostMessage`, `keybd_event` or `mouse_event` to another program's window
+- Open a poker client's process, read or write its memory, or run code inside it. Program names come from the system's process list (`Process.GetProcesses()`), which does not open the process.
+- Read window contents: no screen capture of tables, no `PrintWindow`, no UI Automation of other programs
+- Change another program's window styles. The only `SetWindowLong` calls are on NittyGriddy's own grid overlay and active-table border.
+- Connect to the internet. The program has no network code.
+
+**What still reaches the client**
+
+- When a table is moved, resized or activated, Windows sends the client its usual notifications (*your window moved*, *you are now active*), exactly as when you drag the window yourself. A client can see that its window moved, not what moved it.
+- Global hotkeys (`Alt+1` and so on) are taken by NittyGriddy and do not reach the client. A client shortcut on the same keys does not work while the grid is on; rebind one of the two on the **Hotkeys** tab.
+
+Whether moving windows is acceptable is up to each poker site's terms. Unibet's terms prohibit helper software, which is why its rule is off by default.
 
 ## Pinned Tables
 
