@@ -171,9 +171,33 @@ Use the part of the title that stays the same while you play. A GGPoker tourname
 
 ## Your Own Rules
 
-A window is a table when it matches any rule that is switched on. Within a rule, every part that is filled in must match: program (exact name), window class (starts with), title (contains), and "but not when the title contains" to leave out lobbies. With *regular expressions* ticked, class and titles are patterns instead.
+Any poker client can be added on the **Tables** tab, PokerStars for instance.
 
-A rule with only a title can match any program's window, a browser tab for instance, so give it a program or class where you can.
+**Pick an open window** (easiest):
+
+1. Open a table in the client.
+2. On the **Tables** tab, click *Pick an open window…* and select the table in the list. The dialog shows the window's program and window class.
+3. Leave *Match the program* and *Match the window class* ticked and click *Add rule*.
+4. Program and class often match the client's lobby as well. If the lobby shows up as a table, click *Edit* on the new rule and add a title part that only tables have, or a lobby word under "but not when the title contains".
+
+**Or write the rule yourself** with *Add your own rule*. A window is a table when it matches any rule that is switched on. Within a rule, every part that is filled in must match:
+
+| Field | Matches | Example |
+|---|---|---|
+| Program | the program name without `.exe`, exactly | `PokerStars` |
+| Window class starts with | the window class | `PokerStarsTableFrameClass` |
+| Title contains | part of the title bar text | empty, if the class already picks out tables |
+| But not when the title contains | leaves out lobbies and the like | a word only lobby titles have |
+
+With *regular expressions* ticked, class and titles are patterns instead. A rule with only a title can match any program's window, a browser tab for instance, so give it a program or class where you can.
+
+The PokerStars values above are the ones other table managers use for its tables; they have not been checked against the current client here. *Pick an open window…* shows the real values.
+
+**Check the rule:** at the bottom of the **Tables** tab, *Open tables* lists the windows treated as tables, and *Other windows of these programs, not treated as tables* lists the rest. Tables belong in the first list, lobbies in the second.
+
+**Want a client built in?** [Open an issue](https://github.com/robinabganpat/NittyGriddy/issues) with a few real table titles, the program name and the window class (all shown by *Pick an open window…*), plus a lobby title. Built-in rules are only made from titles that were actually seen, never guessed.
+
+Check the client's terms: whether a table manager is allowed is up to each poker site.
 
 ## Configuration Files
 
