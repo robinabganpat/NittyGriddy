@@ -73,7 +73,7 @@ jobs:
           ./tools/release-notes.ps1 -Version '${{ steps.version.outputs.version }}' -Dir dist -ScanResults meta/virustotal.json -OutFile meta/notes.md
           Get-Content meta/notes.md -Raw >> $env:GITHUB_STEP_SUMMARY
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: NittyGriddy-${{ steps.version.outputs.version }}
           path: |

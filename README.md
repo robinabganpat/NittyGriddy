@@ -6,6 +6,8 @@ NittyGriddy arranges poker table windows into a grid of numbered slots across yo
 
 It works purely at the window level: it moves, resizes and activates windows through the Windows window API. It never sends clicks or keystrokes to a poker client, never reads table contents, and has no HUD or betting hotkeys.
 
+![NittyGriddy's Layout tab: a 2 × 3 grid of numbered slots on each of three displays](docs/screenshots/layout.png)
+
 ## Features
 
 - **Slots on every monitor**: each display has its own grid (rows × columns, "fit N tables", or "fill with open tables", which resizes the grid to the tables that are open). Slots are numbered across all displays; the numbers are shown on the grid overlay and used by the hotkeys.
@@ -30,7 +32,18 @@ It works purely at the window level: it moves, resizes and activates windows thr
 - **Pinned tables**: a tournament can always go to the same slot
 - **Your own rules**: for any other program, by program name, window class and title, with optional regular expressions
 
-![Grid overlay](https://i.imgur.com/GsItVUK.png)
+<table>
+  <tr>
+    <td><img src="docs/screenshots/tables.png" alt="Tables tab: built-in rules for GGPoker, HC Online, CoinPoker and Unibet, and pinned tables"></td>
+    <td><img src="docs/screenshots/hotkeys.png" alt="Hotkeys tab: rebindable global hotkeys"></td>
+    <td><img src="docs/screenshots/behaviour.png" alt="Behaviour tab: drop, cascade, arrange and active-border options"></td>
+  </tr>
+  <tr>
+    <td align="center">Tables</td>
+    <td align="center">Hotkeys</td>
+    <td align="center">Behaviour</td>
+  </tr>
+</table>
 
 ## Install
 
@@ -43,7 +56,7 @@ It works purely at the window level: it moves, resizes and activates windows thr
 
   **Why the installer may be flagged:** a handful of antivirus engines that judge files by machine learning rather than by known malware, Microsoft Defender among them, flag the installer, typically as `Trojan:Win32/Wacatac!ml`. The zip, which contains exactly the same program, is clean. The flag is about the installer wrapper: it is not code-signed, and unsigned installers built with common tools are something malware uses too. If Defender blocks the installer, use the zip.
 
-**Coming from version 1.0?** That was a separate kind of install. Remove it first under *Settings > Apps > Installed apps* (it is listed as NittyGriddy 1.0.0.0); otherwise both versions stay installed. A layout saved with 1.0 can be imported: see [Configuration Files](#configuration-files).
+**Still have version 1.0 installed?** Uninstall it first under *Settings > Apps > Installed apps*, where it is listed as *NittyGriddy 1.0.0.0*, then install the latest release. Version 1.0 is no longer supported, and the two do not replace each other: without uninstalling, both stay installed.
 
 To update a 2.x install, run the newer installer over the old one, or replace the unpacked folder. Your settings live in `%APPDATA%\NittyGriddy` and are kept. Uninstalling leaves that folder in place; delete it yourself if you want everything gone.
 
@@ -64,6 +77,8 @@ Or build it yourself from this source: see [Building from source](#building-from
 1. Start NittyGriddy from the Start menu, or `NittyGriddy.exe` from the unpacked zip.
 
    On a first start, a **Get started** panel at the top of the window leads through the steps below and ticks each one as you do it. *Hide* removes it; the **Behaviour** tab has a button to bring it back.
+
+   ![The Get started panel above the Layout tab](docs/screenshots/getting-started.png)
 
 2. **Tables** tab: the supported poker clients are already listed and switched on (Unibet is off, see below). Nothing to set up for those. For another program, click *Pick an open window…*.
 
@@ -132,7 +147,7 @@ A rule with only a title can match any program's window, a browser tab for insta
 
 ## Configuration Files
 
-Settings are saved automatically; there is nothing to save or load by hand. To move a layout between machines or share it, use the **⋯** menu next to the profile picker: *Export to file…* and *Import from file…*. Files saved by version 1.0 can be imported the same way.
+Settings are saved automatically; there is nothing to save or load by hand. To move a layout between machines or share it, use the **⋯** menu next to the profile picker: *Export to file…* and *Import from file…*.
 
 `NittyGriddy.exe --settings <path>` uses a different settings file.
 
