@@ -72,6 +72,12 @@ The result must equal the SHA-256 in the release notes (the same values are in `
 
 Or build it yourself from this source: see [Building from source](#building-from-source).
 
+## Disclaimer
+
+NittyGriddy is provided as is, without any warranty, and you use it at your own risk. The author is not liable for any damage or loss resulting from its use, including but not limited to lost hands, missed actions, or restrictions or closures of poker accounts. See sections 15 and 16 of the [GNU GPL v3](LICENSE).
+
+It is your responsibility to check that a table manager is allowed by the terms of the poker sites you play on. NittyGriddy is not affiliated with or endorsed by any poker site or client mentioned here.
+
 ## Quick Start
 
 1. Start NittyGriddy from the Start menu, or `NittyGriddy.exe` from the unpacked zip.
