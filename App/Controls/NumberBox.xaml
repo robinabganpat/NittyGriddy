@@ -1,0 +1,16 @@
+<UserControl x:Class="App.Controls.NumberBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False">
+    <StackPanel Orientation="Horizontal">
+        <RepeatButton x:Name="BtnDown" Content="−" Width="32" Padding="0" Focusable="False" Click="BtnDown_Click"
+                      ToolTip="Decrease"/>
+        <TextBox x:Name="Input" Width="48" Margin="4,0" TextAlignment="Center" VerticalContentAlignment="Center"
+                 PreviewTextInput="Input_PreviewTextInput"
+                 PreviewKeyDown="Input_PreviewKeyDown"
+                 LostKeyboardFocus="Input_LostKeyboardFocus"
+                 MouseWheel="Input_MouseWheel"/>
+        <RepeatButton x:Name="BtnUp" Content="+" Width="32" Padding="0" Focusable="False" Click="BtnUp_Click"
+                      ToolTip="Increase"/>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,99 @@
+# Builds a release when a version tag is pushed, scans the files on VirusTotal and publishes them as a GitHub release.
+#
+#   1. Set <Version> in App/App.csproj, commit, push.
+#   2. git tag v2.1.0 && git push origin v2.1.0      (the tag must be "v" + <Version>)
+#
+# Needs the repository secret VT_API_KEY (a free VirusTotal API key) for the scan; without it the release is still
+# published, with report links but no scan results.
+#
+# Run by hand (Actions > Release > Run workflow) it builds and scans the chosen branch and keeps the files as a
+# workflow artifact, without publishing anything.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Read the version
+        id: version
+        run: |
+          $version = ([xml](Get-Content App/App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match <Version>$version</Version> in App/App.csproj"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install Inno Setup
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed" }
+          }
+
+      - name: Build (tests, zip, installer)
+        run: |
+          ./tools/build-release.ps1 -OutputDir dist
+          $v = '${{ steps.version.outputs.version }}'
+          foreach ($f in "NittyGriddy-$v-portable.zip", "NittyGriddy-$v-setup.exe", 'SHA256SUMS.txt') {
+            if (-not (Test-Path "dist/$f")) { throw "dist/$f was not built" }
+          }
+
+      - name: Scan on VirusTotal
+        env:
+          VT_API_KEY: ${{ secrets.VT_API_KEY }}
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          ./tools/virustotal-scan.ps1 -Path "dist/NittyGriddy-$v-portable.zip", "dist/NittyGriddy-$v-setup.exe" -OutFile meta/virustotal.json
+
+      - name: Write the release notes
+        run: |
+          ./tools/release-notes.ps1 -Version '${{ steps.version.outputs.version }}' -Dir dist -ScanResults meta/virustotal.json -OutFile meta/notes.md
+          Get-Content meta/notes.md -Raw >> $env:GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: NittyGriddy-${{ steps.version.outputs.version }}
+          path: |
+            dist/
+            meta/
+
+      - name: Publish the GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $files = Get-ChildItem dist -File | ForEach-Object FullName
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            # A re-run of the workflow: replace the files and notes of the release made the first time
+            gh release upload $tag @files --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Uploading the files failed' }
+            gh release edit $tag --notes-file meta/notes.md
+          } else {
+            gh release create $tag @files --title "NittyGriddy ${{ steps.version.outputs.version }}" --notes-file meta/notes.md --verify-tag
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing the release failed' }

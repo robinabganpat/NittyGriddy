@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using App.Native;
 
 namespace App.Services
 {
@@ -36,6 +37,11 @@ namespace App.Services
             public string ClassName { get; set; } = string.Empty;
             public int ProcessId { get; set; }
 
+            /// <summary>
+            /// Name of the owning program; filled in by callers that need it
+            /// </summary>
+            public string ProcessName { get; set; } = string.Empty;
+
             public override string ToString()
             {
                 if (!string.IsNullOrEmpty(Title))
@@ -53,8 +59,8 @@ namespace App.Services
 
             EnumWindows((hWnd, lParam) =>
             {
-                // Only include visible windows with titles
-                if (!IsWindowVisible(hWnd))
+                // Only include windows the user can see
+                if (!NativeMethods.IsShown(hWnd))
                     return true;
 
                 var title = new StringBuilder(256);

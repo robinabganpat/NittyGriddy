@@ -6,7 +6,9 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
+        ShowActivated="False"
         ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
         IsHitTestVisible="False">
     <Canvas x:Name="GridCanvas" Background="Transparent">
         <!-- Grid cells will be drawn here dynamically -->

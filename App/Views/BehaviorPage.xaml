@@ -1,0 +1,114 @@
+<UserControl x:Class="App.Views.BehaviorPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,14,0">
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Moving tables" Style="{StaticResource CardTitle}"/>
+
+                    <TextBlock Text="When a table is dropped on a slot that already holds one" Style="{StaticResource Body}" Margin="0,0,0,6"/>
+                    <RadioButton x:Name="RadSwap" GroupName="DropBehavior" Content="Swap the two tables" Checked="Setting_Changed"/>
+                    <RadioButton x:Name="RadStack" GroupName="DropBehavior" Content="Stack it on top" Checked="Setting_Changed"/>
+
+                    <CheckBox x:Name="ChkCascade" Content="Cascade tables that share a slot" Margin="0,14,0,0"
+                              Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="28,2,0,0"
+                               Text="Each table in a stack is shifted down and right so its title bar shows, and all of them shrink a little to fit the slot. Off: they lie exactly on top of each other at full size."/>
+
+                    <TextBlock Text="Arrange tables" Style="{StaticResource Body}" Margin="0,14,0,6"/>
+                    <RadioButton x:Name="RadArrangeKeep" GroupName="ArrangeMode" Content="Keep tables where they are; others go to the nearest free slot" Checked="Setting_Changed"/>
+                    <RadioButton x:Name="RadArrangePack" GroupName="ArrangeMode" Content="Pack all tables into slots 1, 2, 3… in order" Checked="Setting_Changed"/>
+
+                    <CheckBox x:Name="ChkCompact" Content="Close gaps when a table closes" Margin="0,14,0,0"
+                              Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="28,2,0,0"
+                               Text="Tables in later slots on the same display move down to fill the empty slot. Tables then move without you touching them, which can put a different table under your cursor mid-click. Off by default."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Active table" Style="{StaticResource CardTitle}"/>
+                    <CheckBox x:Name="ChkBorder" Content="Show a border around the table that has focus"
+                              Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+
+                    <StackPanel x:Name="BorderOptions" Margin="28,10,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Colour" Style="{StaticResource FieldLabel}" Width="80"/>
+                            <ItemsControl x:Name="ColorList" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton GroupName="BorderColor" IsChecked="{Binding IsSelected}" Margin="0,0,8,0" MinWidth="0"
+                                                     ToolTip="{Binding Name}" Cursor="Hand" Click="Color_Click">
+                                            <RadioButton.Template>
+                                                <ControlTemplate TargetType="RadioButton">
+                                                    <Border x:Name="Ring" Width="30" Height="30" CornerRadius="15"
+                                                            BorderThickness="2" BorderBrush="Transparent" Background="Transparent">
+                                                        <Ellipse Width="20" Height="20" Fill="{Binding Brush}"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsChecked" Value="True">
+                                                            <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                                            <Setter TargetName="Ring" Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </RadioButton.Template>
+                                        </RadioButton>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="Thickness" Style="{StaticResource FieldLabel}" Width="80"/>
+                            <Slider x:Name="SldThickness" Width="220" Minimum="1" Maximum="12" TickFrequency="1" IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center" ValueChanged="SldThickness_ValueChanged"/>
+                            <TextBlock x:Name="TxtThickness" Style="{StaticResource Body}" Margin="12,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="NittyGriddy window" Style="{StaticResource CardTitle}"/>
+                    <CheckBox x:Name="ChkMinimizeToTray" Content="Minimise to the notification area" Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <CheckBox x:Name="ChkCloseToTray" Content="Keep running in the notification area when the window is closed" Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <CheckBox x:Name="ChkStartMinimized" Content="Start minimised" Checked="Setting_Changed" Unchecked="Setting_Changed"/>
+                    <CheckBox x:Name="ChkStartWithWindows" Content="Start with Windows" Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="28,2,0,0"
+                               Text="The grid comes back in the state you left it: if it was on when NittyGriddy closed, it is on again at the next start."/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Settings" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Style="{StaticResource Caption}" Text="Everything is saved automatically to:"/>
+                    <TextBlock x:Name="TxtSettingsPath" Style="{StaticResource Body}" Margin="0,4,0,10" TextWrapping="Wrap"/>
+                    <Button Content="Open folder" HorizontalAlignment="Left" Click="BtnOpenFolder_Click"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Getting started" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,10"
+                               Text="The guide from a first start: open a table, put tables in the grid, jump to one with a hotkey, leave NittyGriddy running. It follows what is already set up."/>
+                    <Button Content="Show the guide" HorizontalAlignment="Left" Click="BtnShowGuide_Click"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

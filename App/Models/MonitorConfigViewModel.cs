@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 
@@ -13,15 +15,8 @@ namespace App.Models
         private readonly MonitorInfo _monitor;
         private readonly GridLayout _layout;
         private readonly Action? _onConfigChanged;
-
-        private bool _isFixedGridMode = true;
-        private bool _isNWindowMode = false;
-        private bool _isDisabledMode = false;
-        private int _rows = 2;
-        private int _columns = 3;
-        private int _numWindows = 6;
-        private double _cellSpacing = 10;
-        private double _cellMargins = 5;
+        private int _revision;
+        private IReadOnlyList<GridCell> _previewCells;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -31,91 +26,103 @@ namespace App.Models
             _layout = layout;
             _onConfigChanged = onConfigChanged;
 
-            // Initialize from layout - set defaults if not already set
-            if (layout.Mode == GridLayoutMode.Disabled)
-            {
-                _isFixedGridMode = false;
-                _isNWindowMode = false;
-                _isDisabledMode = true;
-            }
-            else if (layout.Mode == GridLayoutMode.NWindowOptimized)
-            {
-                _isFixedGridMode = false;
-                _isNWindowMode = true;
-                _isDisabledMode = false;
-            }
-            else if (layout.Mode == GridLayoutMode.FixedGrid || layout.Mode == 0)
-            {
-                _isFixedGridMode = true;
-                _isNWindowMode = false;
-                _isDisabledMode = false;
-                layout.Mode = GridLayoutMode.FixedGrid;
-            }
+            // Custom cells have no editor; treat such a layout as a fixed grid
+            if (_layout.Mode == GridLayoutMode.CustomCells)
+                _layout.Mode = GridLayoutMode.FixedGrid;
 
-            // Load values from layout or use defaults if not set
-            _rows = layout.Rows > 0 ? layout.Rows : 2;
-            _columns = layout.Columns > 0 ? layout.Columns : 3;
-            _numWindows = layout.NumberOfWindows > 0 ? layout.NumberOfWindows : 6;
-
-            // For CellSpacing and CellMargins, use the layout values directly (including 0)
-            // Only apply defaults if the layout was just created (GridLayout constructor sets CellSpacing=10, CellMargins=5)
-            _cellSpacing = layout.CellSpacing;
-            _cellMargins = layout.CellMargins.Top;
-
-            // Ensure layout has row/column values
-            layout.Rows = _rows;
-            layout.Columns = _columns;
-            layout.NumberOfWindows = _numWindows;
-
-            System.Diagnostics.Debug.WriteLine($"MonitorConfigViewModel created for {monitor.DeviceName}: Mode={layout.Mode}, Rows={_rows}, Cols={_columns}, Spacing={_cellSpacing}, Margins={_cellMargins}");
+            _previewCells = _layout.Cells;
         }
 
-        public string Header => $"{_monitor.DeviceName} - {_monitor.Bounds.Width}x{_monitor.Bounds.Height}" +
-                                (_monitor.IsPrimary ? " (Primary)" : "");
+        /// <summary>
+        /// The cells the preview draws. While a setting is being adjusted these are calculated on the spot;
+        /// once the change has been applied they are the real cells, which also know which slots hold tables.
+        /// </summary>
+        public IReadOnlyList<GridCell> PreviewCells => _previewCells;
+
+        /// <summary>
+        /// Recalculate the preview from the current settings without applying them to the screen.
+        /// Returns the number of slots this display will have.
+        /// </summary>
+        /// <param name="firstSlotNumber">Number of this display's first slot, counting across displays</param>
+        public int UpdatePreview(int firstSlotNumber)
+        {
+            _layout.DisplayBounds = _monitor.WorkArea;
+
+            var cells = _layout.BuildCells();
+            foreach (var cell in cells)
+                cell.SlotNumber = firstSlotNumber + cell.Id;
+
+            _previewCells = cells;
+            RaisePreviewChanged();
+            return cells.Count;
+        }
+
+        /// <summary>
+        /// "Display 2 · 2560×1440 · Primary"
+        /// </summary>
+        public string Header
+        {
+            get
+            {
+                // Device names look like \\.\DISPLAY2
+                var number = new string(_monitor.DeviceName.Where(char.IsDigit).ToArray());
+                var name = number.Length > 0 ? $"Display {number}" : _monitor.DeviceName;
+                return $"{name} · {_monitor.Bounds.Width:F0}×{_monitor.Bounds.Height:F0}" + (_monitor.IsPrimary ? " · Primary" : "");
+            }
+        }
 
         public string RadioGroupName => $"LayoutMode_{_monitor.DeviceName}";
 
         public MonitorInfo Monitor => _monitor;
         public GridLayout Layout => _layout;
 
+        /// <summary>
+        /// Changes whenever the grid or its occupancy changes; views bind to it to redraw
+        /// </summary>
+        public int Revision => _revision;
+
+        /// <summary>
+        /// Which slot numbers this monitor holds, e.g. "Slots 7–12"
+        /// </summary>
+        public string SlotRange
+        {
+            get
+            {
+                if (IsDisabledMode || _previewCells.Count == 0)
+                    return "No grid on this display";
+
+                var first = _previewCells[0].SlotNumber;
+                var last = _previewCells[^1].SlotNumber;
+                return first == last ? $"Slot {first}" : $"Slots {first}–{last}";
+            }
+        }
+
         public bool IsFixedGridMode
         {
-            get => _isFixedGridMode;
-            set
-            {
-                if (_isFixedGridMode != value)
-                {
-                    _isFixedGridMode = value;
-                    if (value)
-                    {
-                        _isNWindowMode = false;
-                        _isDisabledMode = false;
-                        _layout.Mode = GridLayoutMode.FixedGrid;
-                        OnPropertyChanged(nameof(IsNWindowMode));
-                        OnPropertyChanged(nameof(IsDisabledMode));
-                    }
-                    OnPropertyChanged();
-                    NotifyConfigChanged();
-                }
-            }
+            get => _layout.Mode == GridLayoutMode.FixedGrid;
+            set { if (value) SetMode(GridLayoutMode.FixedGrid); }
         }
 
         public bool IsNWindowMode
         {
-            get => _isNWindowMode;
+            get => _layout.Mode == GridLayoutMode.NWindowOptimized;
+            set { if (value) SetMode(GridLayoutMode.NWindowOptimized); }
+        }
+
+        public bool IsAutoFitMode
+        {
+            get => _layout.Mode == GridLayoutMode.AutoFit;
+            set { if (value) SetMode(GridLayoutMode.AutoFit); }
+        }
+
+        public int AutoFitMaxTables
+        {
+            get => _layout.AutoFitMaxTables;
             set
             {
-                if (_isNWindowMode != value)
+                if (_layout.AutoFitMaxTables != value && value > 0 && value <= 20)
                 {
-                    _isNWindowMode = value;
-                    if (value)
-                    {
-                        _isFixedGridMode = false;
-                        _isDisabledMode = false;
-                        _layout.Mode = GridLayoutMode.NWindowOptimized;
-                        OnPropertyChanged(nameof(IsFixedGridMode));
-                        OnPropertyChanged(nameof(IsDisabledMode));
-                    }
+                    _layout.AutoFitMaxTables = value;
                     OnPropertyChanged();
                     NotifyConfigChanged();
                 }
@@ -124,34 +131,33 @@ namespace App.Models
 
         public bool IsDisabledMode
         {
-            get => _isDisabledMode;
-            set
-            {
-                if (_isDisabledMode != value)
-                {
-                    _isDisabledMode = value;
-                    if (value)
-                    {
-                        _isFixedGridMode = false;
-                        _isNWindowMode = false;
-                        _layout.Mode = GridLayoutMode.Disabled;
-                        OnPropertyChanged(nameof(IsFixedGridMode));
-                        OnPropertyChanged(nameof(IsNWindowMode));
-                    }
-                    OnPropertyChanged();
-                    NotifyConfigChanged();
-                }
-            }
+            get => _layout.Mode == GridLayoutMode.Disabled;
+            set { if (value) SetMode(GridLayoutMode.Disabled); }
+        }
+
+        public bool IsGridActive => !IsDisabledMode;
+
+        private void SetMode(GridLayoutMode mode)
+        {
+            if (_layout.Mode == mode)
+                return;
+
+            _layout.Mode = mode;
+            OnPropertyChanged(nameof(IsFixedGridMode));
+            OnPropertyChanged(nameof(IsNWindowMode));
+            OnPropertyChanged(nameof(IsAutoFitMode));
+            OnPropertyChanged(nameof(IsDisabledMode));
+            OnPropertyChanged(nameof(IsGridActive));
+            NotifyConfigChanged();
         }
 
         public int Rows
         {
-            get => _rows;
+            get => _layout.Rows;
             set
             {
-                if (_rows != value && value > 0 && value <= 10)
+                if (_layout.Rows != value && value > 0 && value <= 10)
                 {
-                    _rows = value;
                     _layout.Rows = value;
                     OnPropertyChanged();
                     NotifyConfigChanged();
@@ -161,12 +167,11 @@ namespace App.Models
 
         public int Columns
         {
-            get => _columns;
+            get => _layout.Columns;
             set
             {
-                if (_columns != value && value > 0 && value <= 10)
+                if (_layout.Columns != value && value > 0 && value <= 10)
                 {
-                    _columns = value;
                     _layout.Columns = value;
                     OnPropertyChanged();
                     NotifyConfigChanged();
@@ -176,12 +181,11 @@ namespace App.Models
 
         public int NumWindows
         {
-            get => _numWindows;
+            get => _layout.NumberOfWindows;
             set
             {
-                if (_numWindows != value && value > 0 && value <= 100)
+                if (_layout.NumberOfWindows != value && value > 0 && value <= 100)
                 {
-                    _numWindows = value;
                     _layout.NumberOfWindows = value;
                     OnPropertyChanged();
                     NotifyConfigChanged();
@@ -191,12 +195,11 @@ namespace App.Models
 
         public double CellSpacing
         {
-            get => _cellSpacing;
+            get => _layout.CellSpacing;
             set
             {
-                if (Math.Abs(_cellSpacing - value) > 0.01)
+                if (Math.Abs(_layout.CellSpacing - value) > 0.01)
                 {
-                    _cellSpacing = value;
                     _layout.CellSpacing = value;
                     OnPropertyChanged();
                     NotifyConfigChanged();
@@ -206,17 +209,32 @@ namespace App.Models
 
         public double CellMargins
         {
-            get => _cellMargins;
+            get => _layout.CellMargins.Top;
             set
             {
-                if (Math.Abs(_cellMargins - value) > 0.01)
+                if (Math.Abs(_layout.CellMargins.Top - value) > 0.01)
                 {
-                    _cellMargins = value;
                     _layout.CellMargins = new Thickness(value);
                     OnPropertyChanged();
                     NotifyConfigChanged();
                 }
             }
+        }
+
+        /// <summary>
+        /// Call after the grid was recalculated or tables moved, so bound views redraw
+        /// </summary>
+        public void NotifyGridApplied()
+        {
+            _previewCells = _layout.Cells;
+            RaisePreviewChanged();
+        }
+
+        private void RaisePreviewChanged()
+        {
+            _revision++;
+            OnPropertyChanged(nameof(Revision));
+            OnPropertyChanged(nameof(SlotRange));
         }
 
         private void NotifyConfigChanged()

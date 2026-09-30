@@ -1,0 +1,225 @@
+<UserControl x:Class="App.Views.TablesPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:App.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,14,0">
+
+            <!-- Which windows are tables -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Poker clients" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,12"
+                               Text="Tables of these programs are managed automatically. A rule picks out the table windows and leaves lobbies and other windows alone. Switch a client off to have its windows ignored."/>
+
+                    <ItemsControl x:Name="RuleList" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Top" MinWidth="0" Margin="0,0,4,0"
+                                              ToolTip="Manage this client's tables"/>
+                                    <StackPanel Grid.Column="1" Margin="0,4,12,0">
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Body}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding Status}" Margin="0,2,0,0"
+                                                   Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCaution}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                                        <Button Content="Edit" MinWidth="64" Margin="0,0,6,0" Click="BtnEditRule_Click"/>
+                                        <Button Content="Remove" MinWidth="72" Click="BtnRemoveRule_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock x:Name="TxtNoFilters" Style="{StaticResource Caption}" Margin="0,0,0,8"
+                               Foreground="{StaticResource WarningBrush}" Visibility="Collapsed"
+                               Text="No rules, so no window is managed. Add a client or a rule of your own."/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnAddClient" Content="Add client ▾" Margin="0,0,8,0" Click="BtnAddClient_Click">
+                            <Button.ContextMenu>
+                                <ContextMenu x:Name="ClientMenu"/>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button Content="Add your own rule" Margin="0,0,8,0" Click="BtnNewRule_Click"/>
+                        <Button Content="Pick an open window…" Click="BtnPick_Click"/>
+                    </StackPanel>
+
+                    <!-- Rule editor, shown while adding or editing -->
+                    <StackPanel x:Name="RuleForm" Visibility="Collapsed">
+                        <Separator Margin="0,16"/>
+                        <TextBlock x:Name="TxtFormTitle" Text="New rule" Style="{StaticResource Body}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,10">
+                                <TextBlock Text="Name" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtName"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,10">
+                                <TextBlock Text="Program (e.g. GGnet) — empty for any" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtProcess"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,10">
+                                <TextBlock Text="Window class starts with" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtClass"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,10">
+                                <TextBlock Text="Title contains" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtTitle"/>
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="0">
+                                <TextBlock Text="But not when the title contains (lobby, cashier…)" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtExclude"/>
+                            </StackPanel>
+                            <CheckBox x:Name="ChkRegex" Grid.Row="2" Grid.Column="2" Content="Class and titles are regular expressions"
+                                      VerticalAlignment="Bottom"/>
+                        </Grid>
+
+                        <TextBlock x:Name="TxtFormError" Style="{StaticResource Caption}" Margin="0,8,0,0"
+                                   Foreground="{DynamicResource SystemFillColorCriticalBrush}" Visibility="Collapsed"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button x:Name="BtnSaveRule" Content="Add rule" MinWidth="100" Margin="0,0,8,0" Click="BtnSaveRule_Click"
+                                    Style="{DynamicResource AccentButtonStyle}"/>
+                            <Button Content="Cancel" MinWidth="80" Click="BtnCancelEdit_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Pins -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Pinned tables" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,0,0,12"
+                               Text="A table whose title contains the text always goes to that slot, in this profile. Use the part of the title that stays the same while you play, such as the tournament name: blinds and table number change. Other tables leave a pinned slot free as long as another empty slot exists."/>
+
+                    <ItemsControl x:Name="PinList" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource SlotBadge}" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding SlotText}" Style="{StaticResource Caption}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Pattern}" Style="{StaticResource Body}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Warning}" Style="{StaticResource Caption}" Foreground="{StaticResource WarningBrush}"
+                                                   Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibility}}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Content="Remove" MinWidth="72" Click="BtnRemovePin_Click"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Title contains" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="TxtPinPattern"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="Slot" Style="{StaticResource Caption}" Margin="0,0,0,4"/>
+                            <controls:NumberBox x:Name="NumPinSlot" Value="1" Minimum="1" Maximum="100"/>
+                        </StackPanel>
+                        <CheckBox x:Name="ChkPinRegex" Grid.Column="2" Content="Regex" Margin="16,0,0,0" VerticalAlignment="Bottom" MinWidth="0"/>
+                        <Button Grid.Column="3" Content="Pin" MinWidth="80" Margin="8,0,0,0" VerticalAlignment="Bottom" Click="BtnAddPin_Click"
+                                Style="{DynamicResource AccentButtonStyle}"/>
+                    </Grid>
+                    <TextBlock x:Name="TxtPinError" Style="{StaticResource Caption}" Margin="0,8,0,0"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
+            <!-- What was recognised -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock x:Name="TxtTablesTitle" Text="Open tables" Style="{StaticResource CardTitle}"/>
+                    <TextBlock x:Name="TxtNoTables" Style="{StaticResource Caption}" Text="No open window is recognised as a table. Open a table in one of the programs above and it is listed here within a second, with the slot it is in."/>
+                    <ItemsControl x:Name="TableList" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource SlotBadge}" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding SlotText}" Style="{StaticResource Caption}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" Style="{StaticResource Body}" TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding Title}"/>
+                                    <Button Grid.Column="2" Content="{Binding PinButtonText}" MinWidth="72" Margin="8,0,0,0" Click="BtnPinTable_Click"
+                                            IsEnabled="{Binding CanPin}"
+                                            ToolTip="Fill in a pin for this table below; adjust the text and slot, then press Pin"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel x:Name="OtherWindowsPanel" Visibility="Collapsed" Margin="0,14,0,0">
+                        <TextBlock Text="Other windows of these programs, not treated as tables" Style="{StaticResource Body}" FontWeight="SemiBold"/>
+                        <TextBlock Style="{StaticResource Caption}" Margin="0,2,0,6"
+                                   Text="Lobbies and the like belong here. If one of these is a table, its client's rule needs adjusting: Edit the rule above."/>
+                        <ItemsControl x:Name="OtherList" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Client}" Style="{StaticResource Caption}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Title}" Style="{StaticResource Caption}" TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

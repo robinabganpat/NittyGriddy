@@ -1,74 +1,24 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
-using System.Windows.Threading;
+using App.Native;
 
 namespace App.Services
 {
     /// <summary>
-    /// Service for tracking window movements and detecting drag operations
+    /// Observes top-level window events system-wide: drags, new windows, closed windows, and foreground changes.
+    /// Callbacks arrive on the thread that called StartTracking (the UI thread) through its message loop.
     /// </summary>
     public class WindowTrackingService
     {
-        // Windows hook delegates and constants
-        private delegate void WinEventDelegate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime);
+        private readonly Func<IntPtr, bool> _isTargetWindow;
+        private readonly List<IntPtr> _hooks = new();
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventDelegate lpfnWinEventProc, uint idProcess, uint idThread, uint dwFlags);
-
-        [DllImport("user32.dll")]
-        private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
-
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-
-        [DllImport("user32.dll")]
-        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-        [DllImport("user32.dll")]
-        private static extern bool GetCursorPos(out POINT lpPoint);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RECT
-        {
-            public int Left;
-            public int Top;
-            public int Right;
-            public int Bottom;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT
-        {
-            public int X;
-            public int Y;
-        }
-
-        // Event constants
-        private const uint EVENT_SYSTEM_MOVESIZESTART = 0x000A;
-        private const uint EVENT_SYSTEM_MOVESIZEEND = 0x000B;
-        private const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
-        private const uint EVENT_OBJECT_SHOW = 0x8002;
-        private const uint WINEVENT_OUTOFCONTEXT = 0;
-
-        private IntPtr _moveStartHook;
-        private IntPtr _moveEndHook;
-        private IntPtr _locationHook;
-        private IntPtr _showHook;
-        private WinEventDelegate? _moveStartDelegate;
-        private WinEventDelegate? _moveEndDelegate;
-        private WinEventDelegate? _locationDelegate;
-        private WinEventDelegate? _showDelegate;
-
-        private readonly List<App.Models.WindowFilter> _windowFilters = new();
+        // Kept for the lifetime of this object: an event already queued when the hooks are removed may still be
+        // delivered, and must not reach a collected delegate
+        private readonly NativeMethods.WinEventDelegate _callback;
 
         private IntPtr _currentDraggedWindow = IntPtr.Zero;
-        private readonly Dispatcher _dispatcher;
 
         // Events
         public event EventHandler<WindowDragEventArgs>? WindowDragStarted;
@@ -76,212 +26,159 @@ namespace App.Services
         public event EventHandler<WindowDragEventArgs>? WindowDragEnded;
         public event EventHandler<WindowDragEventArgs>? WindowShown;
 
-        public WindowTrackingService(Dispatcher dispatcher)
-        {
-            _dispatcher = dispatcher;
-        }
-
         /// <summary>
-        /// Clear all target window filters
+        /// A visible top-level window's title changed (any window; subscribers filter)
         /// </summary>
-        public void ClearTargetFilters()
-        {
-            _windowFilters.Clear();
-            System.Diagnostics.Debug.WriteLine("WindowTrackingService: Filters cleared");
-        }
+        public event Action<IntPtr>? WindowTitleChanged;
 
         /// <summary>
-        /// Add a window filter to track
+        /// A top-level window was destroyed (any window; subscribers filter)
         /// </summary>
-        public void AddWindowFilter(App.Models.WindowFilter filter)
+        public event Action<IntPtr>? WindowDestroyed;
+
+        /// <summary>
+        /// A window was restored from minimised (any window; subscribers filter)
+        /// </summary>
+        public event Action<IntPtr>? WindowRestored;
+
+        /// <summary>
+        /// The foreground window changed (any window; subscribers filter)
+        /// </summary>
+        public event Action<IntPtr>? ForegroundChanged;
+
+        /// <summary>
+        /// The window set as <see cref="FollowedWindow"/> moved, resized, minimised or restored
+        /// </summary>
+        public event Action<IntPtr>? FollowedWindowChanged;
+
+        /// <summary>
+        /// A single window whose position changes are reported through FollowedWindowChanged
+        /// </summary>
+        public IntPtr FollowedWindow { get; set; }
+
+        public IntPtr DraggedWindow => _currentDraggedWindow;
+
+        public WindowTrackingService(Func<IntPtr, bool> isTargetWindow)
         {
-            _windowFilters.Add(filter);
-            System.Diagnostics.Debug.WriteLine($"WindowTrackingService: Added filter '{filter}'");
+            _isTargetWindow = isTargetWindow;
+            _callback = OnWinEvent;
         }
 
         /// <summary>
-        /// Start tracking window movements
+        /// Start tracking window events
         /// </summary>
         public void StartTracking()
         {
-            if (_moveStartHook != IntPtr.Zero)
+            if (_hooks.Count > 0)
                 return; // Already tracking
 
-            // Create delegates (must be stored to prevent garbage collection)
-            _moveStartDelegate = new WinEventDelegate(OnWindowMoveStart);
-            _moveEndDelegate = new WinEventDelegate(OnWindowMoveEnd);
-            _locationDelegate = new WinEventDelegate(OnWindowLocationChange);
-            _showDelegate = new WinEventDelegate(OnWindowShow);
+            Hook(NativeMethods.EVENT_SYSTEM_FOREGROUND);
+            Hook(NativeMethods.EVENT_SYSTEM_MOVESIZESTART);
+            Hook(NativeMethods.EVENT_SYSTEM_MOVESIZEEND);
+            Hook(NativeMethods.EVENT_SYSTEM_MINIMIZESTART);
+            Hook(NativeMethods.EVENT_SYSTEM_MINIMIZEEND);
+            Hook(NativeMethods.EVENT_OBJECT_DESTROY);
+            Hook(NativeMethods.EVENT_OBJECT_SHOW);
+            Hook(NativeMethods.EVENT_OBJECT_LOCATIONCHANGE);
+            Hook(NativeMethods.EVENT_OBJECT_NAMECHANGE);
+        }
 
-            // Set hooks
-            _moveStartHook = SetWinEventHook(EVENT_SYSTEM_MOVESIZESTART, EVENT_SYSTEM_MOVESIZESTART, IntPtr.Zero, _moveStartDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-            _moveEndHook = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, IntPtr.Zero, _moveEndDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-            _locationHook = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero, _locationDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
-            _showHook = SetWinEventHook(EVENT_OBJECT_SHOW, EVENT_OBJECT_SHOW, IntPtr.Zero, _showDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
+        private void Hook(uint eventId)
+        {
+            var hook = NativeMethods.SetWinEventHook(eventId, eventId, IntPtr.Zero, _callback, 0, 0, NativeMethods.WINEVENT_OUTOFCONTEXT);
+            if (hook != IntPtr.Zero)
+                _hooks.Add(hook);
         }
 
         /// <summary>
-        /// Stop tracking window movements
+        /// Stop tracking window events
         /// </summary>
         public void StopTracking()
         {
-            if (_moveStartHook != IntPtr.Zero)
-            {
-                UnhookWinEvent(_moveStartHook);
-                _moveStartHook = IntPtr.Zero;
-            }
+            foreach (var hook in _hooks)
+                NativeMethods.UnhookWinEvent(hook);
 
-            if (_moveEndHook != IntPtr.Zero)
-            {
-                UnhookWinEvent(_moveEndHook);
-                _moveEndHook = IntPtr.Zero;
-            }
-
-            if (_locationHook != IntPtr.Zero)
-            {
-                UnhookWinEvent(_locationHook);
-                _locationHook = IntPtr.Zero;
-            }
-
-            if (_showHook != IntPtr.Zero)
-            {
-                UnhookWinEvent(_showHook);
-                _showHook = IntPtr.Zero;
-            }
-
-            _moveStartDelegate = null;
-            _moveEndDelegate = null;
-            _locationDelegate = null;
-            _showDelegate = null;
+            _hooks.Clear();
+            _currentDraggedWindow = IntPtr.Zero;
         }
 
-        private void OnWindowMoveStart(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        private void OnWinEvent(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
-            var className = new StringBuilder(256);
-            GetClassName(hwnd, className, className.Capacity);
-            var title = new StringBuilder(256);
-            GetWindowText(hwnd, title, title.Capacity);
-
-            System.Diagnostics.Debug.WriteLine($"Window move start detected: '{title}' (Class: {className})");
-
-            if (!IsTargetWindow(hwnd))
-            {
-                System.Diagnostics.Debug.WriteLine($"  -> Window not in target filters, ignoring");
-                return;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"  -> Window IS a target! Starting tracking...");
-            _currentDraggedWindow = hwnd;
-
-            _dispatcher.BeginInvoke(() =>
-            {
-                var rect = GetWindowBounds(hwnd);
-                var mousePos = GetMousePosition();
-                WindowDragStarted?.Invoke(this, new WindowDragEventArgs(hwnd, rect, mousePos));
-            });
-        }
-
-        private void OnWindowLocationChange(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
-        {
-            if (hwnd != _currentDraggedWindow || _currentDraggedWindow == IntPtr.Zero)
+            // Only events about a window itself, not its child objects, carets or the cursor
+            if (hwnd == IntPtr.Zero || idObject != NativeMethods.OBJID_WINDOW || idChild != 0)
                 return;
 
-            _dispatcher.BeginInvoke(() =>
+            try
             {
-                var rect = GetWindowBounds(hwnd);
-                var mousePos = GetMousePosition();
-                WindowDragMoved?.Invoke(this, new WindowDragEventArgs(hwnd, rect, mousePos));
-            });
+                Dispatch(eventType, hwnd);
+            }
+            catch (Exception ex)
+            {
+                // An exception escaping into the native caller would terminate the process mid-session
+                System.Diagnostics.Debug.WriteLine($"WindowTrackingService: handler failed for event 0x{eventType:X}: {ex}");
+            }
         }
 
-        private void OnWindowMoveEnd(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        private void Dispatch(uint eventType, IntPtr hwnd)
         {
-            if (hwnd != _currentDraggedWindow || _currentDraggedWindow == IntPtr.Zero)
-                return;
-
-            _dispatcher.BeginInvoke(() =>
+            switch (eventType)
             {
-                var rect = GetWindowBounds(hwnd);
-                var mousePos = GetMousePosition();
-                WindowDragEnded?.Invoke(this, new WindowDragEventArgs(hwnd, rect, mousePos));
-                _currentDraggedWindow = IntPtr.Zero;
-            });
+                case NativeMethods.EVENT_SYSTEM_MOVESIZESTART:
+                    if (_isTargetWindow(hwnd))
+                    {
+                        _currentDraggedWindow = hwnd;
+                        WindowDragStarted?.Invoke(this, CreateArgs(hwnd));
+                    }
+                    break;
+
+                case NativeMethods.EVENT_OBJECT_LOCATIONCHANGE:
+                    if (hwnd == _currentDraggedWindow)
+                        WindowDragMoved?.Invoke(this, CreateArgs(hwnd));
+                    if (hwnd == FollowedWindow)
+                        FollowedWindowChanged?.Invoke(hwnd);
+                    break;
+
+                case NativeMethods.EVENT_SYSTEM_MOVESIZEEND:
+                    if (hwnd == _currentDraggedWindow)
+                    {
+                        _currentDraggedWindow = IntPtr.Zero;
+                        WindowDragEnded?.Invoke(this, CreateArgs(hwnd));
+                    }
+                    break;
+
+                case NativeMethods.EVENT_OBJECT_SHOW:
+                    if (NativeMethods.IsTopLevelWindow(hwnd) && _isTargetWindow(hwnd))
+                        WindowShown?.Invoke(this, CreateArgs(hwnd));
+                    break;
+
+                case NativeMethods.EVENT_OBJECT_NAMECHANGE:
+                    WindowTitleChanged?.Invoke(hwnd);
+                    break;
+
+                case NativeMethods.EVENT_OBJECT_DESTROY:
+                    WindowDestroyed?.Invoke(hwnd);
+                    break;
+
+                case NativeMethods.EVENT_SYSTEM_FOREGROUND:
+                    ForegroundChanged?.Invoke(hwnd);
+                    break;
+
+                case NativeMethods.EVENT_SYSTEM_MINIMIZESTART:
+                    if (hwnd == FollowedWindow)
+                        FollowedWindowChanged?.Invoke(hwnd);
+                    break;
+
+                case NativeMethods.EVENT_SYSTEM_MINIMIZEEND:
+                    WindowRestored?.Invoke(hwnd);
+                    if (hwnd == FollowedWindow)
+                        FollowedWindowChanged?.Invoke(hwnd);
+                    break;
+            }
         }
 
-        private void OnWindowShow(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        private static WindowDragEventArgs CreateArgs(IntPtr hwnd)
         {
-            var className = new StringBuilder(256);
-            GetClassName(hwnd, className, className.Capacity);
-            var title = new StringBuilder(256);
-            GetWindowText(hwnd, title, title.Capacity);
-
-            System.Diagnostics.Debug.WriteLine($"Window shown: '{title}' (Class: {className})");
-
-            if (!IsTargetWindow(hwnd))
-            {
-                System.Diagnostics.Debug.WriteLine($"  -> Window not in target filters, ignoring");
-                return;
-            }
-
-            System.Diagnostics.Debug.WriteLine($"  -> Window IS a target! Auto-snapping to first available cell...");
-
-            _dispatcher.BeginInvoke(() =>
-            {
-                var rect = GetWindowBounds(hwnd);
-                var mousePos = GetMousePosition();
-                WindowShown?.Invoke(this, new WindowDragEventArgs(hwnd, rect, mousePos));
-            });
-        }
-
-        private bool IsTargetWindow(IntPtr hwnd)
-        {
-            if (_windowFilters.Count == 0)
-            {
-                System.Diagnostics.Debug.WriteLine("  -> No filters configured, not tracking any windows");
-                return false;
-            }
-
-            var className = new StringBuilder(256);
-            GetClassName(hwnd, className, className.Capacity);
-            var classNameStr = className.ToString();
-
-            var title = new StringBuilder(256);
-            GetWindowText(hwnd, title, title.Capacity);
-            var titleStr = title.ToString();
-
-            System.Diagnostics.Debug.WriteLine($"  -> Checking window '{titleStr}' (Class: {classNameStr}) against {_windowFilters.Count} filter(s)");
-
-            // Check if window matches any filter
-            foreach (var filter in _windowFilters)
-            {
-                if (filter.Matches(classNameStr, titleStr))
-                {
-                    System.Diagnostics.Debug.WriteLine($"  -> MATCH! Filter: {filter}");
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private Rect GetWindowBounds(IntPtr hwnd)
-        {
-            RECT rect;
-            if (GetWindowRect(hwnd, out rect))
-            {
-                return new Rect(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
-            }
-            return Rect.Empty;
-        }
-
-        private Point GetMousePosition()
-        {
-            POINT point;
-            if (GetCursorPos(out point))
-            {
-                return new Point(point.X, point.Y);
-            }
-            return new Point(0, 0);
+            return new WindowDragEventArgs(hwnd, NativeMethods.GetWindowBounds(hwnd), NativeMethods.GetCursorPosition());
         }
 
         public void Dispose()

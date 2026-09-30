@@ -1,19 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net9.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
+        <!-- Windows Forms is referenced only for the tray icon (NotifyIcon) -->
+        <UseWindowsForms>true</UseWindowsForms>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <!-- WPF0001: the Fluent ThemeMode API is marked experimental in .NET 9.
+             WFO0003 wants DPI mode set through Application.SetHighDpiMode, which is a WinForms application API; WPF reads the manifest -->
+        <NoWarn>$(NoWarn);WFO0003;WPF0001</NoWarn>
 
         <!-- Application Info -->
         <AssemblyName>NittyGriddy</AssemblyName>
         <Product>NittyGriddy</Product>
         <Title>NittyGriddy - Window Grid Manager</Title>
         <Description>Automatic window grid manager with multi-monitor support and smart snapping</Description>
-        <Version>1.0.0</Version>
-        <Company>NittyGriddy</Company>
-        <Copyright>Copyright © 2025</Copyright>
+        <Version>2.0.0</Version>
+        <Company>Robin Ganpat</Company>
+        <Authors>Robin Ganpat</Authors>
+        <Copyright>Copyright © 2025-2026 Robin Ganpat. Licensed under the GNU GPL v3.</Copyright>
 
         <!-- Application Icon -->
         <ApplicationIcon>icon.ico</ApplicationIcon>
@@ -25,6 +32,10 @@
 
     <ItemGroup>
         <Resource Include="icon.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="NittyGriddy.Tests" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,140 @@
+<UserControl x:Class="App.Views.SetupGuideView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+
+        <!--
+            One step of the guide. Its marker is a slot: empty while the step is open, occupied once it is done,
+            in the colours the monitor preview uses for slots.
+        -->
+        <Style x:Key="GuideStep" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Back" CornerRadius="6" Padding="10,8" Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border x:Name="Slot" Grid.Column="0" Width="30" Height="30" CornerRadius="4" VerticalAlignment="Top"
+                                        Background="{StaticResource SlotEmptyFillBrush}"
+                                        BorderBrush="{StaticResource SlotEmptyStrokeBrush}" BorderThickness="1">
+                                    <Grid>
+                                        <TextBlock x:Name="Number" Text="{Binding Number}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Path x:Name="Tick" Data="M 0,5 L 4,9 L 11,1" Opacity="0"
+                                              Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="2"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock x:Name="Title" Text="{Binding Title}" FontSize="14"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Status}" Style="{StaticResource Caption}"
+                                               TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Done}" Value="True">
+                                <Setter TargetName="Slot" Property="Background" Value="{StaticResource SlotTakenFillBrush}"/>
+                                <Setter TargetName="Slot" Property="BorderBrush" Value="{StaticResource GridOnBrush}"/>
+                                <Setter TargetName="Number" Property="Visibility" Value="Collapsed"/>
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Tick" Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <ExponentialEase EasingMode="EaseOut" Exponent="4"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Tick" Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
+                                <Setter TargetName="Title" Property="FontWeight" Value="SemiBold"/>
+                            </DataTrigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Back" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Border Style="{StaticResource Card}" Padding="20,14,20,16" Margin="0,0,14,14">
+        <StackPanel>
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Get started" Style="{StaticResource CardTitle}" Margin="0" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Hide" MinWidth="64" Click="BtnHide_Click"
+                        ToolTip="Hide this guide. Behaviour has a button to show it again."/>
+            </Grid>
+
+            <!-- The steps, in the order they are done. Selecting one shows what it needs below. -->
+            <ItemsControl x:Name="StepList" Focusable="False" Margin="-10,0,-6,0">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource GuideStep}" Click="Step_Click"
+                                AutomationProperties.Name="{Binding AccessibleName}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- The selected step. The height is held so the pages below do not shift from step to step. -->
+            <Grid Margin="0,12,0,0" MinHeight="78">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" MaxWidth="620">
+                    <TextBlock x:Name="TxtDetail" Style="{StaticResource Body}" TextWrapping="Wrap" LineHeight="20"/>
+                    <TextBlock x:Name="TxtNote" Style="{StaticResource Caption}" Margin="0,4,0,0"/>
+                    <CheckBox x:Name="ChkCloseToTray" Margin="0,6,0,0" Visibility="Collapsed"
+                              Content="Keep running in the notification area when the window is closed"
+                              Click="ChkCloseToTray_Click"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="24,0,0,0">
+                    <Button x:Name="BtnSecondary" Margin="0,0,8,0" Click="BtnSecondary_Click"/>
+                    <Button x:Name="BtnPrimary" MinWidth="96" Click="BtnPrimary_Click" Style="{DynamicResource AccentButtonStyle}"/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>

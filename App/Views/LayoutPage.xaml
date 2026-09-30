@@ -1,0 +1,106 @@
+<UserControl x:Class="App.Views.LayoutPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:App.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,14,0">
+
+            <!-- One card per connected display -->
+            <ItemsControl x:Name="MonitorList" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="260"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                                    <controls:MonitorPreview ViewModel="{Binding}" Revision="{Binding Revision}"/>
+                                    <TextBlock Text="{Binding SlotRange}" Style="{StaticResource Caption}"
+                                               HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="24,0,0,0">
+                                    <TextBlock Text="{Binding Header}" Style="{StaticResource CardTitle}"/>
+
+                                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                        <RadioButton Content="Rows × columns" GroupName="{Binding RadioGroupName}"
+                                                     IsChecked="{Binding IsFixedGridMode}" Margin="0,0,18,4"/>
+                                        <RadioButton Content="Fit a number of tables" GroupName="{Binding RadioGroupName}"
+                                                     IsChecked="{Binding IsNWindowMode}" Margin="0,0,18,4"/>
+                                        <RadioButton Content="Fill with open tables" GroupName="{Binding RadioGroupName}"
+                                                     IsChecked="{Binding IsAutoFitMode}" Margin="0,0,18,4"/>
+                                        <RadioButton Content="No grid" GroupName="{Binding RadioGroupName}"
+                                                     IsChecked="{Binding IsDisabledMode}" Margin="0,0,0,4"/>
+                                    </WrapPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12"
+                                                Visibility="{Binding IsFixedGridMode, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="Rows" Style="{StaticResource FieldLabel}"/>
+                                        <controls:NumberBox Value="{Binding Rows}" Minimum="1" Maximum="10"/>
+                                        <TextBlock Text="Columns" Style="{StaticResource FieldLabel}" Margin="24,0,10,0"/>
+                                        <controls:NumberBox Value="{Binding Columns}" Minimum="1" Maximum="10"/>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12"
+                                                Visibility="{Binding IsNWindowMode, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="Tables" Style="{StaticResource FieldLabel}"/>
+                                        <controls:NumberBox Value="{Binding NumWindows}" Minimum="1" Maximum="100"/>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="0,0,0,12"
+                                                Visibility="{Binding IsAutoFitMode, Converter={StaticResource BoolToVisibility}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="At most" Style="{StaticResource FieldLabel}"/>
+                                            <controls:NumberBox Value="{Binding AutoFitMaxTables}" Minimum="1" Maximum="20"/>
+                                            <TextBlock Text="tables; more stack" Style="{StaticResource FieldLabel}" Margin="10,0,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource Caption}" Margin="0,8,0,0"
+                                                   Text="One slot per table on this display, as large as the display allows: one table fills it, two sit side by side, four make 2 × 2. A new table gets its place at once. When a table closes, the others grow to fill the space after a short pause, so they move without you touching them: mind your cursor."/>
+                                    </StackPanel>
+
+                                    <Grid Visibility="{Binding IsGridActive, Converter={StaticResource BoolToVisibility}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="220"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Gap between slots" Style="{StaticResource FieldLabel}"/>
+                                        <Slider Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="50" TickFrequency="1"
+                                                IsSnapToTickEnabled="True" Value="{Binding CellSpacing}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding CellSpacing, StringFormat={}{0:F0} px}"
+                                                   Style="{StaticResource Body}" Margin="12,0,0,0"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Margin inside slot" Style="{StaticResource FieldLabel}"/>
+                                        <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="20" TickFrequency="1"
+                                                IsSnapToTickEnabled="True" Value="{Binding CellMargins}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding CellMargins, StringFormat={}{0:F0} px}"
+                                                   Style="{StaticResource Body}" Margin="12,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Table size" Style="{StaticResource CardTitle}"/>
+                    <CheckBox x:Name="ChkMaintainAspectRatio" Content="Keep each table's shape when fitting it into a slot"
+                              Checked="ChkMaintainAspectRatio_Changed" Unchecked="ChkMaintainAspectRatio_Changed"/>
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,6,0,0"
+                               Text="On: the table is scaled to fit and centred, so it is never stretched. Off: the table fills the slot exactly."/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -344,14 +344,19 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Claude Code - AI coding assistant
-# Keep .claude/settings.json (team-shared config) and .claude/commands/ (team commands)
-# but ignore local settings and any temporary files
-.claude/settings.local.json
-.claude/cache/
-.claude/*.log
-.claude/.session*
+# AI assistant and tooling files: local to each developer, never committed
+# Claude Code
+.claude/
 CLAUDE.md
+CLAUDE.local.md
+# Superpowers plans and specs
+docs/superpowers/
+# Impeccable (design context and local config)
+.impeccable/
+PRODUCT.md
+DESIGN.md
+# Playwright MCP (browser snapshots and screenshots)
+.playwright-mcp/
 
 # Exceptions to the exclusions
 !src/Microsoft.DotNet.Wpf/src/WpfGfx/codegen/mcg/main/*.rsp

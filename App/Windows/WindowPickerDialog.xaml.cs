@@ -13,9 +13,26 @@ namespace App.Windows
 
         public WindowEnumerationService.WindowInfo? SelectedWindow { get; private set; }
 
+        /// <summary>
+        /// Whether the new rule should match the selected window's program
+        /// </summary>
+        public bool MatchProgram => ChkMatchProgram.IsChecked == true;
+
+        /// <summary>
+        /// Whether the new rule should match the selected window's class
+        /// </summary>
+        public bool MatchClass => ChkMatchClass.IsChecked == true;
+
+        /// <summary>
+        /// Whether the new rule should match the selected window's title
+        /// </summary>
+        public bool MatchTitle => ChkMatchTitle.IsChecked == true;
+
         public WindowPickerDialog()
         {
             InitializeComponent();
+            ThemeMode = ThemeMode.Dark;
+
             _windowEnumService = new WindowEnumerationService();
             LoadWindows();
 
@@ -24,9 +41,15 @@ namespace App.Windows
 
         private void LoadWindows()
         {
+            // Windows without a title are overlays and helper windows, never tables
+            var processNames = new ProcessNameCache();
             var windows = _windowEnumService.GetAllWindows()
+                .Where(w => !string.IsNullOrWhiteSpace(w.Title))
                 .OrderBy(w => w.Title)
                 .ToList();
+
+            foreach (var window in windows)
+                window.ProcessName = processNames.GetName(window.ProcessId);
 
             WindowsDataGrid.ItemsSource = windows;
         }
@@ -35,8 +58,14 @@ namespace App.Windows
         {
             if (WindowsDataGrid.SelectedItem is WindowEnumerationService.WindowInfo window)
             {
-                TxtSelectedTitle.Text = $"Title: {window.Title}";
-                TxtSelectedClass.Text = $"Class: {window.ClassName}";
+                TxtSelectedProgram.Text = $"Match the program:  {window.ProcessName}";
+                TxtSelectedClass.Text = $"Match the window class:  {window.ClassName}";
+                TxtSelectedTitle.Text = $"Match the window title:  {window.Title}";
+                BtnOk.IsEnabled = true;
+            }
+            else
+            {
+                BtnOk.IsEnabled = false;
             }
         }
 
@@ -56,15 +85,11 @@ namespace App.Windows
 
         private void BtnOk_Click(object sender, RoutedEventArgs e)
         {
-            if (WindowsDataGrid.SelectedItem is WindowEnumerationService.WindowInfo window)
+            if (WindowsDataGrid.SelectedItem is WindowEnumerationService.WindowInfo window && (MatchProgram || MatchClass || MatchTitle))
             {
                 SelectedWindow = window;
                 DialogResult = true;
                 Close();
-            }
-            else
-            {
-                MessageBox.Show("Please select a window first.", "No Window Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

@@ -23,6 +23,12 @@ namespace App.Models
         /// <summary>
         /// Grid is disabled for this monitor
         /// </summary>
-        Disabled
+        Disabled,
+
+        /// <summary>
+        /// One slot per table open on the monitor, shaped so the tables are as large as possible;
+        /// the grid grows and shrinks as tables open and close
+        /// </summary>
+        AutoFit
     }
 }

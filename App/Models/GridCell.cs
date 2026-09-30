@@ -13,6 +13,12 @@ namespace App.Models
         public Rect Bounds { get; set; }
         public int Row { get; set; }
         public int Column { get; set; }
+
+        /// <summary>
+        /// 1-based number of this cell across all monitors; the number shown on the overlay and used by slot hotkeys
+        /// </summary>
+        public int SlotNumber { get; set; }
+
         public List<IntPtr> OccupiedWindows { get; set; }
 
         /// <summary>
@@ -31,6 +37,7 @@ namespace App.Models
             Bounds = bounds;
             Row = row;
             Column = column;
+            SlotNumber = id + 1;
             OccupiedWindows = new List<IntPtr>();
         }
 
